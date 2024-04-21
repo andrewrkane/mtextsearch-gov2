@@ -1,0 +1,7 @@
+[submodule "trec_eval"]
+	path = trec_eval
+	url = https://github.com/usnistgov/trec_eval
+	ignore = dirty
+[submodule "mtextsearch"]
+	path = mtextsearch
+	url = https://github.com/andrewrkane/mtextsearch
