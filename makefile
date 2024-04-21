@@ -4,7 +4,6 @@ all:
 	echo "usage: make [index|query|eval]"
 
 # ------------------ common elements ------------------
-
 SHELL = /bin/bash
 
 DD = data
@@ -53,11 +52,16 @@ $(DR): | $(DD)
 $(DP)/query-base.txt: $(DO)/topics.[78]*
 	cat $(DO)/topics.[78]* | awk '{if($$2=="Number:")n=$$3; if($$1=="<title>"){$$1="";q=$$0} if($$0=="</top>")print n";"q}' > $(DP)/query-base.txt
 
+$(DP)/query-tdesc.txt: $(DO)/topics.[78]*
+	cat $(DO)/topics.[78]* | awk 'BEGIN{k=1} {if($$2=="Number:")n=$$3; if($$1=="<title>"){$$1="";q=$$0} if(k==1&&substr($$0,1,1)!="<")q=q" "$$0; if($$1=="<narr>")k=0; if($$0=="</top>"){k=1;print n";"q}}' > $(DP)/query-tdesc.txt
+
 $(DP)/query-all.txt: $(DO)/topics.[78]*
 	cat $(DO)/topics.[78]* | awk '{if($$2=="Number:")n=$$3; if($$1=="<title>"){$$1="";q=$$0} if(substr($$0,1,1)!="<")q=q" "$$0; if($$0=="</top>")print n";"q}' > $(DP)/query-all.txt
 
 $(DR)/trec-fullGX-%.tsv: $(DP)/query-%.txt $(DI)/fullGX.mindex $(MS)/mtokenize.exe $(MS)/msearch.exe | $(DR)
 	time cat $(DP)/query-$(*).txt | $(MS)/mtokenize.exe -q | $(MS)/msearch.exe -k1000 $(DI)/fullGX.mindex | awk '{$$5=$$5"\tmtextsearch-base"; $$2="Q0\t"$$2; print}' > $(DR)/trec-fullGX-$(*).tsv
+
+.PRECIOUS: $(DR)/trec-fullGX-%.tsv
 
 query: $(DR)/trec-fullGX-base.tsv
 
