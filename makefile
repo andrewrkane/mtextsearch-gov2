@@ -51,10 +51,13 @@ $(DR): | $(DD)
 	echo "***** creating directory $(DR)"; mkdir $(DR)
 
 $(DP)/query-base.txt: $(DO)/topics.[78]*
-	cat $(DO)/topics.[78]* | awk '{if ($$2=="Number:") n=$$3; if ($$1=="<title>") {$$1=""; q=$$0} if ($$0=="</top>") print n ";" q;}' > $(DP)/query-base.txt
+	cat $(DO)/topics.[78]* | awk '{if($$2=="Number:")n=$$3; if($$1=="<title>"){$$1="";q=$$0} if($$0=="</top>")print n";"q}' > $(DP)/query-base.txt
 
-$(DR)/trec-fullGX-base.tsv: $(DP)/query-base.txt $(DI)/fullGX.mindex $(MS)/mtokenize.exe $(MS)/msearch.exe | $(DR)
-	time cat $(DP)/query-base.txt | $(MS)/mtokenize.exe -q | $(MS)/msearch.exe -k1000 $(DI)/fullGX.mindex | awk '{$$5=$$5"\tmtextsearch-base"; $$2="Q0\t"$$2; print}' > $(DR)/trec-fullGX-base.tsv
+$(DP)/query-all.txt: $(DO)/topics.[78]*
+	cat $(DO)/topics.[78]* | awk '{if($$2=="Number:")n=$$3; if($$1=="<title>"){$$1="";q=$$0} if(substr($$0,1,1)!="<")q=q" "$$0; if($$0=="</top>")print n";"q}' > $(DP)/query-all.txt
+
+$(DR)/trec-fullGX-%.tsv: $(DP)/query-%.txt $(DI)/fullGX.mindex $(MS)/mtokenize.exe $(MS)/msearch.exe | $(DR)
+	time cat $(DP)/query-$(*).txt | $(MS)/mtokenize.exe -q | $(MS)/msearch.exe -k1000 $(DI)/fullGX.mindex | awk '{$$5=$$5"\tmtextsearch-base"; $$2="Q0\t"$$2; print}' > $(DR)/trec-fullGX-$(*).tsv
 
 query: $(DR)/trec-fullGX-base.tsv
 
@@ -62,6 +65,8 @@ query: $(DR)/trec-fullGX-base.tsv
 $(TE)/trec_eval:
 	$(MAKE) -C $(TE)
 
-eval: $(DR)/trec-fullGX-base.tsv $(TE)/trec_eval
-	$(TE)/trec_eval -m num_q -m P.10 -m map -m ndcg -m ndcg_cut.10 $(DO)/qrels.701-850.txt $(DR)/trec-fullGX-base.tsv
+eval-%: $(DR)/trec-fullGX-%.tsv $(TE)/trec_eval
+	$(TE)/trec_eval -m num_q -m P.10 -m map -m ndcg -m ndcg_cut.10 $(DO)/qrels.701-850.txt $(DR)/trec-fullGX-$(*).tsv
+
+eval: eval-base
 
